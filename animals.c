@@ -250,35 +250,36 @@ static int __init animals_init(void)
       }
    }
 
-   printk(KERN_INFO "Allocated a total of %u bytes for ecosystem data structure.\n",
-         ret_eco);
+   printk(KERN_INFO "Set 1 Report:\n");
+   printk(KERN_INFO "\tAllocated a total of %u bytes for ecosystem data structure.\n", ret_eco);
    struct animals *a;
    int num = 0;
+   printk(KERN_INFO "\tContents:");
    list_for_each_entry(a, &ecosystem->list, list)
    {
       num++;
-      printk(KERN_INFO "Animal %s appears %lu times.\n",
+      printk(KERN_INFO "\t\t(%s) appears %lu times.\n",
             a->node->type, a->node->count);
    }
-   printk(KERN_INFO "There are a total of %u types of animals in ecosystem.\n",
+   printk(KERN_INFO "\tThere are a total of %u types of animals in ecosystem.\n",
          num);
    
-   /* Sort List alphabetically and report contents */
-   printk(KERN_INFO "Filtered ecosystem for %s animal type and for types with more than %lu counts.\n",
-         animal_type, count_greater_than);
-   struct animals *b;
+   printk(KERN_INFO "Set 2 Report:\n");
+   printk(KERN_INFO "\tAllocated a total of %u bytes for filtered data structure.\n", ret_filt);
+   printk(KERN_INFO "\tFilter Criteria:\n");
+   printk(KERN_INFO "\t\tanimal type: (%s)\n", animal_type);
+   printk(KERN_INFO "\t\tanimals with more than %lu counts.\n", count_greater_than);
+   struct animals *f;
    num = 0;
-   list_for_each_entry(b, &filtered->list, list)
+   printk(KERN_INFO "\tContents:");
+   list_for_each_entry(f, &filtered->list, list)
    {
       num++;
-      printk(KERN_INFO "Animal %s appears %lu times.\n",
-            b->node->type, b->node->count);
+      printk(KERN_INFO "\t\t(%s) appears %lu times.\n",
+            f->node->type, f->node->count);
    }
-   printk(KERN_INFO "Total of number of nodes in filtered list is %u\n",
-         num);
-   printk(KERN_INFO "Allocated a total of %u bytes for filtered data structure.\n",
-         ret_filt);
-   
+   printk(KERN_INFO "\tTotal of number of nodes in filtered list is %u\n", num);
+
    end = jiffies;
    elapsed = end - start;
    printk(KERN_INFO "Animals Module:\tLoaded after %u msecs.\n",
@@ -318,7 +319,7 @@ static void __exit animals_exit(void)
    }
    size = size + sizeof(*filtered);
    kfree(filtered);
-   printk(KERN_INFO "Freed a total of %u bytes for ecosystem data structure.\n",
+   printk(KERN_INFO "Freed a total of %u bytes for filtered data structure.\n",
          size);
 
    end = jiffies;
