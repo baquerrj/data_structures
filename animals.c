@@ -123,6 +123,11 @@ static int animals_ecosystem(struct animals *animals_list)
    return size;
 }
 
+/* Function to apply animal count filter. Iterates through list
+ * and deletes entries that do not match filter.
+ * Also frees memory allocated for deleted node.
+ * Returns total size of freed memory
+ */
 static int animals_apply_count_filter(struct animals *animals_list)
 {
    struct animals *f;
@@ -143,6 +148,11 @@ static int animals_apply_count_filter(struct animals *animals_list)
    return size;
 }
 
+/* Function to apply animal type filter. Iterates through list
+ * and deletes entries that do not match filter.
+ * Also frees memory allocated for deleted node.
+ * Returns total size of freed memory
+ */ 
 static int animals_apply_type_filter(struct animals *animals_list)
 {
    struct animals *f;
