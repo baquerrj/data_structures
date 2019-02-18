@@ -35,8 +35,6 @@ static struct animals {
    struct list_head list;  /* List of animals */
 };
 
-static unsigned long num_animals;   /* Number of animals in ecosystem */
-
 static struct animals *ecosystem;   /* Data structure for ecosystem information */
 
 static struct animals *filtered;    /* Data structure for filtered ecosystem information */
@@ -127,7 +125,6 @@ static int animals_ecosystem(struct animals *animals_list)
 
 static int animals_apply_count_filter(struct animals *animals_list)
 {
-   printk(KERN_DEBUG "Entered: animals_apply_count_filter().\n");
    struct animals *f;
    struct animals *next;
    size_t size = 0;
@@ -135,9 +132,30 @@ static int animals_apply_count_filter(struct animals *animals_list)
    {
       if( f->node->count < count_greater_than )
       {
-         printk(KERN_INFO "Removing %s from filtered list.\n",
+         printk(KERN_DEBUG "Removing %s from filtered list.\n",
                f->node->type);
-         size = size + sizeof(f->node);
+         size = size + sizeof(*f->node);
+         list_del(&f->list);
+         struct animal *node = f->node;
+         kfree(node);
+      }
+   }
+   return size;
+}
+
+static int animals_apply_type_filter(struct animals *animals_list)
+{
+   struct animals *f;
+   struct animals *next;
+   size_t size = 0;
+   list_for_each_entry_safe(f, next, &animals_list->list, list)
+   {
+      if( 0 != strcmp(f->node->type, animal_type) )
+      {
+         /* Node type does not match filter - remove it */
+         printk(KERN_DEBUG "Removing %s from filtered list.\n",
+               f->node->type);
+         size = size + sizeof(*f->node);
          list_del(&f->list);
          struct animal *node = f->node;
          kfree(node);
@@ -164,14 +182,24 @@ static int animals_filtered(void)
 
    /* Initialize filtered list to unfiltered one - apply filters after */
    size = animals_ecosystem(filtered);
-   if( (0 != strcmp("all", animal_type)) || (0 < count_greater_than) )
+   if( 0 < count_greater_than )
    {
-      /* Apply filters */
+      /* Apply count filter */
       size_t tsize = animals_apply_count_filter(filtered);
       if( !tsize )
       {
          /* Decrement size of memory allocated */
          size = size - tsize; 
+      }
+   }
+   if( 0 != strcmp("all", animal_type) )
+   {
+      /* Apply animal type filter */
+      size_t tsize = animals_apply_type_filter(filtered);
+      if( !tsize )
+      {
+         /* Decrement size of memory allocated */
+         size = size - tsize;
       }
    }
    
@@ -204,20 +232,6 @@ static int __init animals_init(void)
 
    /* Sort List alphabetically */
    list_sort(NULL, &ecosystem->list, cmp);
-#if 0
-   /* Sort List alphabetically and report contents */
-   list_sort(NULL, &ecosystem->list, cmp);
-   printk(KERN_INFO "There are a total of %lu types of animals in ecosystem.\n",
-         num_animals);
-   printk(KERN_INFO "Allocated a total of %u bytes for ecosystem data structure.\n",
-         ret_eco);
-   struct animals *a;
-   list_for_each_entry(a, &ecosystem->list, list)
-   {
-      printk(KERN_INFO "Animal %s appears %lu times.\n",
-            a->node->type, a->node->count);
-   }
-#endif
 
    /* Initialize Filtered Linked List */
    filtered = kmalloc(sizeof(struct animals), GFP_KERNEL);
@@ -235,8 +249,6 @@ static int __init animals_init(void)
          return -1;
       }
    }
-
-
 
    printk(KERN_INFO "Allocated a total of %u bytes for ecosystem data structure.\n",
          ret_eco);
@@ -292,6 +304,23 @@ static void __exit animals_exit(void)
    kfree(ecosystem);
    printk(KERN_INFO "Freed a total of %u bytes for ecosystem data structure.\n",
          size);
+
+   /* Traveser filtered list - freeing memory for nodes along the way */
+   struct animals *f;
+   size = 0;
+   list_for_each_entry(f, &filtered->list, list)
+   {
+      if( f->node )
+      {
+         size = size + sizeof(*f->node);
+         kfree(f->node);
+      }
+   }
+   size = size + sizeof(*filtered);
+   kfree(filtered);
+   printk(KERN_INFO "Freed a total of %u bytes for ecosystem data structure.\n",
+         size);
+
    end = jiffies;
    elapsed = end - start;
    printk(KERN_INFO "Animals Module:\tTook %u msecs to unload.\n",
