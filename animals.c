@@ -112,7 +112,6 @@ static int animals_ecosystem(struct animals *animals_list)
       struct animals *a;
       a = kmalloc(sizeof(*a), GFP_KERNEL);
       a->node = new_node;
-      num_animals++;
       /* Add allocated memory to running sum of size */
       size = size + sizeof(*new_node);
 
@@ -122,7 +121,28 @@ static int animals_ecosystem(struct animals *animals_list)
                i, new_node->type);
       i++;
    }
-   printk(KERN_DEBUG "Exiting: animals_ecosystem()\n");
+   printk(KERN_DEBUG "Exiting: animals_ecosystem().\n");
+   return size;
+}
+
+static int animals_apply_count_filter(struct animals *animals_list)
+{
+   printk(KERN_DEBUG "Entered: animals_apply_count_filter().\n");
+   struct animals *f;
+   struct animals *next;
+   size_t size = 0;
+   list_for_each_entry_safe(f, next, &animals_list->list, list)
+   {
+      if( f->node->count < count_greater_than )
+      {
+         printk(KERN_INFO "Removing %s from filtered list.\n",
+               f->node->type);
+         size = size + sizeof(f->node);
+         list_del(&f->list);
+         struct animal *node = f->node;
+         kfree(node);
+      }
+   }
    return size;
 }
 
@@ -141,13 +161,20 @@ static int animals_filtered(void)
    int i = 0;
    size_t size = sizeof(*filtered);
    unsigned long NUM_ENTRIES = sizeof(seed_array) / sizeof(char*);
-   if( (0 == strcmp("all", animal_type)) && (0 == count_greater_than) )
-   {
-      /* If default options, filtered list is the same as unfiltered (duh)
-       * so, call unfiltered init function animals_ecosystem() */
-      size = animals_ecosystem(filtered);
-   }
 
+   /* Initialize filtered list to unfiltered one - apply filters after */
+   size = animals_ecosystem(filtered);
+   if( (0 != strcmp("all", animal_type)) || (0 < count_greater_than) )
+   {
+      /* Apply filters */
+      size_t tsize = animals_apply_count_filter(filtered);
+      if( !tsize )
+      {
+         /* Decrement size of memory allocated */
+         size = size - tsize; 
+      }
+   }
+   
    printk(KERN_DEBUG "Exiting: animals_filtered().\n");
    return size;
 }
@@ -175,6 +202,8 @@ static int __init animals_init(void)
       }
    }
 
+   /* Sort List alphabetically */
+   list_sort(NULL, &ecosystem->list, cmp);
 #if 0
    /* Sort List alphabetically and report contents */
    list_sort(NULL, &ecosystem->list, cmp);
@@ -207,25 +236,26 @@ static int __init animals_init(void)
       }
    }
 
-   /* Sort List alphabetically and report contents */
-   list_sort(NULL, &ecosystem->list, cmp);
-   printk(KERN_INFO "There are a total of %lu types of animals in ecosystem.\n",
-         num_animals);
+
+
    printk(KERN_INFO "Allocated a total of %u bytes for ecosystem data structure.\n",
          ret_eco);
    struct animals *a;
+   int num = 0;
    list_for_each_entry(a, &ecosystem->list, list)
    {
+      num++;
       printk(KERN_INFO "Animal %s appears %lu times.\n",
             a->node->type, a->node->count);
    }
-
+   printk(KERN_INFO "There are a total of %u types of animals in ecosystem.\n",
+         num);
+   
    /* Sort List alphabetically and report contents */
-   list_sort(NULL, &filtered->list, cmp);
    printk(KERN_INFO "Filtered ecosystem for %s animal type and for types with more than %lu counts.\n",
          animal_type, count_greater_than);
    struct animals *b;
-   int num = 0;
+   num = 0;
    list_for_each_entry(b, &filtered->list, list)
    {
       num++;
