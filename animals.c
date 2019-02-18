@@ -70,7 +70,7 @@ static int animals_exist(struct animals *animals_list, int curr)
    {
       if( 0 == strcmp(seed_array[curr], a->node->type) )
       {
-         printk(KERN_DEBUG "animals_ecosystem(): %s already in ecosystem.\n",
+         printk(KERN_INFO "animals_ecosystem(): %s already in ecosystem.\n",
                a->node->type);
          /* Already have animal in list - increment counter for that type of animal */
          a->node->count++;
